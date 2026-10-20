@@ -124,7 +124,9 @@ That was very encouraging. From this point on, we could start thinking about a s
 
 I decided to go with a timing attack, but with a twist. Instead of simply measuring elapsed time — which would be too imprecise — I planned to control the ATmega’s internal clock so I could precisely count the clock cycles needed to verify the password. Our working hypothesis was that the password check was done character by character using “strcmp” or a similar method with early-exit behavior.
 
-After some research, it turned out the ATmega isn’t designed to run off an external clock unless it’s reprogrammed and specifically configured to do so. In my case, however, I couldn’t reprogram it since I didn’t have the source code, and in its current state it was set up to run off a quartz crystal (see diagram of the different ATmega oscillator modes).
+After some research, it turned out the ATmega isn’t designed to run off an external clock unless it’s reprogrammed and specifically configured to do so. In my case, however, I couldn’t reprogram it since I didn’t have the source code, and in its current state it was set up to run off a quartz crystal.
+
+![atmega328p clock modes](/images/atmel328p_clock.png)
 
 Still, I decided to try anyway. The ATmega datasheet tells us that the quartz clock circuit uses the OSC1 and OSC2 pins. So I used the oscilloscope to measure the input and output of the crystal to get a sense of the voltage and frequency ranges. We estimated the crystal clock circuit runs at around 16 MHz, with a voltage of about 700 mV peak-to-peak centered around 500 mV.
 
