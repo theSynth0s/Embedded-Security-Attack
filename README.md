@@ -99,7 +99,7 @@ We received an Arduino Uno board, and the goal was to break into it in order to 
 Before tackling the hardware itself, we did some preliminary research on the firmware we’d been given. By searching for all the strings present in the code (for example using the site https://sisik.eu/elf), 
 we were able to extract the libraries used as well as several lines of text used somewhere in the program (here are a few examples):
 
-'''
+```
 f7-@Jp0w
 Welcome to the vault. This is not the main entrance.
 No input. Enter password:
@@ -108,7 +108,7 @@ Here is your salt:
 Here is your hash:
 >> ACCESS GRANTED: running protected section
 >> ACCESS DENIED
-'''
+```
 
 (see the full file in “dump.txt”)
 
@@ -126,11 +126,13 @@ I decided to go with a timing attack, but with a twist. Instead of simply measur
 
 After some research, it turned out the ATmega isn’t designed to run off an external clock unless it’s reprogrammed and specifically configured to do so. In my case, however, I couldn’t reprogram it since I didn’t have the source code, and in its current state it was set up to run off a quartz crystal (see diagram of the different ATmega oscillator modes).
 
-Still, I decided to try anyway. The ATmega datasheet tells us that the quartz clock circuit uses the OSC1 and OSC2 pins. So I used the oscilloscope to measure the input and output of the crystal to get a sense of the voltage and frequency ranges. We estimated the crystal clock circuit runs at around 16 MHz, with a voltage of about 600 mV peak-to-peak centered around 550 mV (see oscilloscope diagram).
+Still, I decided to try anyway. The ATmega datasheet tells us that the quartz clock circuit uses the OSC1 and OSC2 pins. So I used the oscilloscope to measure the input and output of the crystal to get a sense of the voltage and frequency ranges. We estimated the crystal clock circuit runs at around 16 MHz, with a voltage of about 700 mV peak-to-peak centered around 500 mV.
+
+![Arduino Quartz](/images/osc2_1.png)
 
 I planned to use a second Arduino board to simulate a clock signal and handle the communication. I used a 100k–10k voltage divider followed by a decoupling capacitor to step down the voltage from a pin on the “controller” Arduino, then fed that signal into the OSC1 input of the target ATmega to drive its clock.
 
-As a first test, to see whether the technique would even work, I flashed a blank ATmega with a simple blink program (an LED blinking on and off).
+As a first test, to see whether the technique would even work, I flashed a blank ATmega with a simple blink program (LED blinking on and off).
 
 To generate the clock signal, I used an Arduino interrupt timer. After running through some calculations (see clock_frequency_calculation.txt), 50 kHz seemed like a good compromise: going faster would have caused issues on the controller Arduino’s side, since it struggled to generate interrupts at a higher rate; going slower would have been far too slow for serial communication with the target ATmega.
 
@@ -140,7 +142,7 @@ And despite everything I read online telling me this wouldn’t work and that I 
 
 With the proof of concept validated, I was able to reflash the ATmega with the provided firmware to carry out the attack.
 
-There was, however, a subtlety: now that the ATmega was only running at 50 kHz, it still “thought” it was communicating at 9600 baud, but it was actually communicating 320 times slower — so really at 30 baud. I therefore needed to write code for the controller Arduino that would bridge the USB communication (at 9600 or 115200 baud) down to the target ATmega’s 30 baud, in both directions — transmit and receive.
+There was, however, a subtlety: now that the ATmega was only running at 50 kHz, it still “thought” it was communicating at 9600 baud, but it was actually communicating 320 times slower — so really at 30 baud. I therefore needed to write code for the controller Arduino that would bridge the USB communication (at 9600 or 115200 baud) down to the target ATmega’s 30 baud, in both directions (transmit and receive).
 
 I first tried using the Arduino SoftwareSerial library, but it doesn’t handle such low baud rates well. So I wrote my own code using manual serial bit-banging, handling the serial communication “by hand” using arbitrary pins. I also used the oscilloscope to precisely analyze the timing and delays of the UART frames, so I could sync as closely as possible with the target ATmega’s timing (see diagram).
 
