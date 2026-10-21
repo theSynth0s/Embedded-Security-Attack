@@ -8,6 +8,8 @@
 - 330µF, 100µF Capacitors & 100Ω resistor (these are optionnal)
 - Oscilloscope
 
+![diagram](/images/diagram.jpg)
+
 ## The Target *(Asset description)*
 The target is an Arduino Uno board powered by the ATmega328P 8-bit AVR microcontroller.
 The firmware implements an interactive command-line interface over UART (Serial) prompting users for a password. Upon successful validation, it computes and outputs a cryptographic hash of the secret keyphrase along with its associated salt.
