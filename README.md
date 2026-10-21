@@ -166,4 +166,12 @@ Console when everything works fine        |  Setup with shielding metal box
 :----------------------------------------:|:----------------------------------------------------------:
 ![console ok](/images/screenshot_ok.png)  |  ![setup in metal box](/images/metal2.jpg)
 
+I discovered that one of the ATmega’s pins went high at the start of the password verification and went low after the “access denied” message was transmitted. I therefore decided to use the transition of this pin to the high state as the trigger to start a clock-cycle counter, and to stop it as soon as the ATmega began responding on the serial communication channel.
+
+I then implemented code on the controller Arduino to handle generating the target ATmega’s clock signal, counting those clock cycles, and managing communication between the computer and the target ATmega. I also wrote a Python program to automate password attempts letter by letter, measuring the time — or more precisely, the number of clock cycles — required each time before the ATmega responded.
+
+In conclusion, due to the instability of the serial communication, I wasn’t able to carry the attack through to completion, but the underlying approach of manually controlling the target ATmega’s clock remains a success.
+
 ## Counter Measures
+
+Assuming our attack had worked as intended, we can think about countermeasures to put in place to prevent this same attack from being effective/working in the future. One idea would be to use a secure verification function in which the validation time doesn’t depend on how much of the password is correct. Alternatively, a verification function could add a random delay to the check, so that multiple attempts with the same password yield completely different response times, making it impossible to use response time to guess the real password.
