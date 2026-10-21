@@ -41,14 +41,14 @@ graph TD
     C1 --> C2["Build 2nd 'controller' Arduino<br/>as fake clock generator"]
     C2 --> C3["Generate clock via interrupt timer<br/>+ voltage divider (100k/10k) + cap"]
     C3 --> C4["Inject fake clock into OSC1"]
-    C4 --> C5{"Validate technique<br/>on blank chip + blink sketch"}
-    C5 -->|"confirmed, even w/o galvanic contact<br/>(inductive coupling)"| C6["Choose 50kHz target clock<br/>→ chip runs ~320x slower"]
+    C4 --> C5["Validate technique<br/>on blank chip + blink sketch"]
+    C5 --> C6["Choose 50kHz target clock<br/>→ chip runs ~320x slower"]
     C6 --> CLOCKDONE["Reflash chip with real firmware<br/>under controlled slow clock"]
  
     %% 4. Bridge
     BRIDGE --> B1["Compute effective baud:<br/>9600 / 320 ≈ 30 baud"]
-    B1 --> B2{"SoftwareSerial library?"}
-    B2 -->|"fails at ultra-low baud"| B3["Hand-roll bit-banged<br/>UART TX/RX on controller Arduino"]
+    B1 --> B2["SoftwareSerial library?"]
+    B2 --> B3["Hand-roll bit-banged<br/>UART TX/RX on controller Arduino"]
     B3 --> B4["Scope-calibrate frame timing<br/>to sync with 30-baud target"]
     B4 --> BDONE["USB (9600/115200) ⇄ 30 baud<br/>bidirectional bridge working"]
  
