@@ -11,72 +11,61 @@
 The target is an Arduino Uno board powered by the ATmega328P 8-bit AVR microcontroller.
 The firmware implements an interactive command-line interface over UART (Serial) prompting users for a password. Upon successful validation, it computes and outputs a cryptographic hash of the secret keyphrase along with its associated salt.
 
-## Attack Tree — ATmega328P (Arduino Uno) — Timing Attack
+# Attack Tree - ATmega328P (Arduino Uno) Vault - Timing Attack
  
 ```mermaid
 graph TD
-    ROOT["Root goal<br/>Obtain the Hash + Salt<br/>stored in the ATmega328P"]
+    GOAL["GOAL<br/>Recover protected hash + salt<br/>from vault firmware"]
  
-    ROOT --> A["A. Direct extraction<br/>of flash/EEPROM memory"]
-    ROOT --> B["B. Exploiting the<br/>'password' serial interface"]
+    GOAL --> AND0{"AND"}
  
-    %% ---------- BRANCH A ----------
-    A --> A1["A1. Read via ISP (SPI)"]
-    A1 --> A1cond{{"AND"}}
-    A1cond --> A1a["Lock bits fuses = 0<br/>(flash unprotected)"]
-    A1cond --> A1b["Access to<br/>MOSI/MISO/SCK/RESET pins"]
+    AND0 --> RECON["1. Reconnaissance"]
+    AND0 --> PHYS["2. Physical Access to MCU"]
+    AND0 --> CLOCK["3. External Clock Control"]
+    AND0 --> BRIDGE["4. Serial Bridge at Slowed Baud"]
+    AND0 --> MEAS["5. Timing Measurement & Brute Force"]
  
-    A --> A2["A2. Bypassing<br/>lock bits"]
-    A2 --> A2a["Partial chip erase /<br/>glitch during erase"]
-    A2 --> A2b["Decapping + optical/<br/>microprobe reading (invasive)"]
+    %% 1. Recon
+    RECON --> R1["Extract strings from firmware binary<br/>(sisik.eu/elf)"]
+    RECON --> R2["Identify prompt flow:<br/>'Enter password:' / ACCESS GRANTED-DENIED"]
+    RECON --> R3["Probe default Serial (USB) port<br/>→ decoy 'not the main entrance'"]
+    RECON --> R4["Sweep pins with logic analyzer/scope<br/>while power-cycling board"]
+    R4 --> R5["Discover real UART on pins 10 & 11"]
  
-    A --> A3["A3. Is debugWIRE active?"]
-    A3 --> A3cond{{"AND"}}
-    A3cond --> A3a["DWEN fuse = enabled"]
-    A3cond --> A3b["debugWIRE adapter<br/>on RESET pin"]
-    A3cond --> A3out["-> Memory dump +<br/>hardware single-step"]
+    %% 2. Physical access
+    PHYS --> P1["Desolder ATmega328P from Uno board"]
+    P1 --> P2["Mount chip on breadboard<br/>for full pin access"]
  
-    %% ---------- BRANCH B ----------
-    B --> B1["B1. Naive brute force<br/>(all combinations)"]
-    B1 --> B1note["Impractical alone:<br/>key space too large"]
+    %% 3. Clock control
+    CLOCK --> C1["Scope OSC1/OSC2 pins<br/>→ ~16 MHz, ~700mV p-p crystal signal"]
+    C1 --> C2["Build 2nd 'controller' Arduino<br/>as fake clock generator"]
+    C2 --> C3["Generate clock via interrupt timer<br/>+ voltage divider (100k/10k) + cap"]
+    C3 --> C4["Inject fake clock into OSC1"]
+    C4 --> C5{"Validate technique<br/>on blank chip + blink sketch"}
+    C5 -->|"confirmed, even w/o galvanic contact<br/>(inductive coupling)"| C6["Choose 50kHz target clock<br/>→ chip runs ~320x slower"]
+    C6 --> CLOCKDONE["Reflash chip with real firmware<br/>under controlled slow clock"]
  
-    B --> B2["B2. Timing attack via<br/>manual clock control"]
+    %% 4. Bridge
+    BRIDGE --> B1["Compute effective baud:<br/>9600 / 320 ≈ 30 baud"]
+    B1 --> B2{"SoftwareSerial library?"}
+    B2 -->|"fails at ultra-low baud"| B3["Hand-roll bit-banged<br/>UART TX/RX on controller Arduino"]
+    B3 --> B4["Scope-calibrate frame timing<br/>to sync with 30-baud target"]
+    B4 --> BDONE["USB (9600/115200) ⇄ 30 baud<br/>bidirectional bridge working"]
  
-    B --> B3["B3. Power analysis<br/>(SPA/DPA) during comparison"]
+    %% 5. Measurement
+    MEAS --> M1["Identify I/O pin that goes HIGH<br/>at start of password check,<br/>LOW after ACCESS DENIED"]
+    M1 --> M2["Use pin edge as trigger<br/>to start/stop cycle counter"]
+    M2 --> M3["Controller Arduino counts<br/>clock cycles per attempt"]
+    M3 --> M4["Python script automates<br/>per-character password guessing"]
+    M4 --> M5{"Hypothesis:<br/>strcmp()-style early-exit compare"}
+    M5 --> OUTCOME["RESULT: Approach validated,<br/>but comms too unstable<br/>(EM noise sensitivity) to complete<br/>full key recovery"]
  
-    B --> B4["B4. Fault injection<br/>(clock/voltage glitch)<br/>to skip verification"]
- 
-    %% ---------- DETAIL OF THE CHOSEN BRANCH B2 ----------
-    B2 --> B2_1["B2.1 Protocol reconnaissance<br/>(baud rate, frame, messages)"]
- 
-    B2 --> B2_2["B2.2 Replacing the clock<br/>with a controllable external source"]
-    B2_2 --> B2_2cond{{"AND"}}
-    B2_2cond --> B2_2a["Stable external clock<br/>(generator/companion MCU)"]
-    B2_2cond --> B2_2b["Stable power supply/reset<br/>at startup"]
- 
-    B2 --> B2_3["B2.3 Counting clock cycles<br/>(single-step or timing measurement)"]
- 
-    B2 --> B2_4["B2.4 Timing oracle<br/>character by character"]
-    B2_4 --> B2_4a["Hypothesis: sequential<br/>comparison is not constant-time"]
-    B2_4 --> B2_4b["For each position:<br/>test candidate values,<br/>keep the one with most cycles"]
-    B2_4 --> B2_4c["Repeat position by position<br/>until the full password is recovered"]
- 
-    B2 --> B2_5["B2.5 Measurement reliability"]
-    B2_5 --> B2_5a["Average/median over<br/>multiple trials per candidate"]
-    B2_5 --> B2_5b["Control temperature/<br/>supply voltage"]
- 
-    B2 --> B2_6["B2.6 Final validation"]
-    B2_6 --> B2_6out["-> Send the reconstructed password<br/>-> Receive Hash + Salt"]
- 
-    %% ---------- STYLES ----------
-    classDef chosen fill:#2e7d32,stroke:#1b5e20,color:#fff,stroke-width:2px;
-    classDef cond fill:#fff3cd,stroke:#997404,color:#000;
-    classDef root fill:#1565c0,stroke:#0d47a1,color:#fff,stroke-width:2px;
- 
-    class ROOT root;
-    class B2,B2_1,B2_2,B2_3,B2_4,B2_5,B2_6,B2_6out,B2_4a,B2_4b,B2_4c,B2_5a,B2_5b,B2_2a,B2_2b chosen;
-    class A1cond,A3cond,B2_2cond cond;
+    style GOAL fill:#7a1f1f,color:#fff
+    style OUTCOME fill:#8a6d1f,color:#fff
+    style CLOCKDONE fill:#1f5c3a,color:#fff
+    style BDONE fill:#1f5c3a,color:#fff
 ```
+
 
 ## Vulnerability severity assessment
 ### CVSS v4.0 Score: 4.1 / Medium
@@ -174,4 +163,13 @@ In conclusion, due to the instability of the serial communication, I wasn’t ab
 
 ## Counter Measures
 
-Assuming our attack had worked as intended, we can think about countermeasures to put in place to prevent this same attack from being effective/working in the future. One idea would be to use a secure verification function in which the validation time doesn’t depend on how much of the password is correct. Alternatively, a verification function could add a random delay to the check, so that multiple attempts with the same password yield completely different response times, making it impossible to use response time to guess the real password.
+Assuming our attack had worked as intended, we can think about countermeasures to put in place to prevent this same attack from being effective/working in the future. One idea would be to use a secure verification function in which the validation time doesn’t depend on how much of the password is correct. Alternatively, a verification function could add a random delay to the check, so that multiple attempts with the same password yield completely different response times, making it impossible to use response time to guess the real password. Or simply disabling the secondary UART (pins 10/11).
+ 
+```mermaid
+graph TD
+    M["Mitigate timing attack<br/>on password/hash check"]
+    M --> M1["Use constant-time comparison<br/>(no early-exit strcmp)"]
+    M --> M2["Add randomized delay<br/>to verification routine"]
+    M --> M3["Disable secondary UART<br/>debug interface (pins 10/11)"]
+```
+
