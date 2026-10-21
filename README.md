@@ -175,6 +175,10 @@ graph TD
     M --> M2["Add randomized delay<br/>to verification routine"]
     M --> M3["Disable secondary UART<br/>debug interface (pins 10/11)"]
 ```
+## AI Disclosure
+
+Part of the arduino controller code are written with the help of Claude Sonnet 5.
+The same AI was also used to translate part of this write-up from French to English.
 
 ## Credits & References
 
