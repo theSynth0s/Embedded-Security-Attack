@@ -127,7 +127,9 @@ I decided to go with a timing attack, but with a twist. Instead of simply measur
 
 After some research, it turned out the ATmega isn’t designed to run off an external clock unless it’s reprogrammed and specifically configured to do so. In my case, however, I couldn’t reprogram it since I didn’t have the source code, and in its current state it was set up to run off a quartz crystal.
 
-![atmega328p clock modes](/images/atmel328p_clock.png)
+ATmega328p Clock Modes Diagram                           |  ATmega328p Pinout
+:-------------------------------------------------------:|:----------------------------------------------------------:
+![atmega328p clock modes](/images/atmel328p_clock.png)   |  ![atmega328p pinout](/images/Atmega168PinMap2.png)
 
 Still, I decided to try anyway. The ATmega datasheet tells us that the quartz clock circuit uses the OSC1 and OSC2 pins. So I used the oscilloscope to measure the input and output of the crystal to get a sense of the voltage and frequency ranges. We estimated the crystal clock circuit runs at around 16 MHz, with a voltage of about 700 mV peak-to-peak centered around 500 mV.
 
@@ -157,8 +159,11 @@ I first tried using the Arduino SoftwareSerial library, but it doesn’t handle 
 
 ![ATmega UART Communication](/images/tx_rx_b.png)
 
-This method works, but it turned out to be very unstable and extremely sensitive to ambient electromagnetic noise. Depending on location, positioning, or even the time of day, we could get 10 successful reads in a row — or nothing but unreadable noise.
+This method works, but it turned out to be very unstable and extremely sensitive to ambient electromagnetic noise. Depending on location, positioning, or even the time of day, we could get 10 successful reads in a row, or nothing but unreadable noise.
+Even having the computer plugged to the power supply or not can drastically change the result's quality.
 
-
+Console when everything works fine        |  Setup with shielding metal box
+:----------------------------------------:|:----------------------------------------------------------:
+![console ok](/images/screenshot_ok.png)  |  ![setup in metal box](/images/metal2.jpg)
 
 ## Counter Measures
