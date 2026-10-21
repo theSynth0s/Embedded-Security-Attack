@@ -57,7 +57,7 @@ graph TD
     M1 --> M2["Use pin edge as trigger<br/>to start/stop cycle counter"]
     M2 --> M3["Controller Arduino counts<br/>clock cycles per attempt"]
     M3 --> M4["Python script automates<br/>per-character password guessing"]
-    M4 --> M5{"Hypothesis:<br/>strcmp()-style early-exit compare"}
+    M4 --> M5["Hypothesis:<br/>strcmp()-style early-exit compare"]
     M5 --> OUTCOME["RESULT: Approach validated,<br/>but comms too unstable<br/>(EM noise sensitivity) to complete<br/>full key recovery"]
  
     style GOAL fill:#7a1f1f,color:#fff
