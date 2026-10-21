@@ -4,7 +4,8 @@
 - Computer
 - 2 Arduinos (target & controller)
 - Breadboard & wires
-- Optionnal : 100k, 10k resistors & small ceramic capacitor
+- 100kΩ, 10kΩ resistors & small ceramic capacitor
+- 330µF, 100µF Capacitors & 100Ω resistor (these are optionnal)
 - Oscilloscope
 
 ## The Target *(Asset description)*
